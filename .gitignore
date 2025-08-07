@@ -1,0 +1,14 @@
+# Node.js backend
+backend/node_modules/
+backend/.env
+
+# React frontend (to be added later)
+client/node_modules/
+client/build/
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
