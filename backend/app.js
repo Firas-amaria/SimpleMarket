@@ -19,15 +19,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Routes will go here later ---
 import authRoutes from "./routes/auth.routes.js"; // to be created
-import productRoutes from "./routes/product.routes.js"; // to be created
-import orderRoutes from "./routes/order.routes.js"; // to be created
-import adminRoutes from "./routes/admin.routes.js"; // to be created
+// import productRoutes from "./routes/product.routes.js"; // to be created
+// import orderRoutes from "./routes/order.routes.js"; // to be created
+// import adminRoutes from "./routes/admin.routes.js"; // to be created
 
 // Reference route structure — not active yet
 app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/admin", adminRoutes);
+// app.use("/api/products", productRoutes);
+// app.use("/api/orders", orderRoutes);
+// app.use("/api/admin", adminRoutes);
 
 // Health check
 app.get("/", (req, res) => {
