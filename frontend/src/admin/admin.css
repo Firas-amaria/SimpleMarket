@@ -1,0 +1,111 @@
+/* admin.css */
+
+html,
+body {
+    overflow-x: hidden;
+}
+
+/* GLOBAL RESET FOR BOX MODEL */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Base container layout */
+.admin-container {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Fixed Header */
+.admin-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 60px;
+    width: 100%;
+    background-color: #15a13f;
+    /* Indigo 600 */
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+/* Sidebar */
+.admin-sidebar {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    width: 250px;
+    height: calc(100vh - 60px);
+    background-color: #17af45;
+    /* Indigo 800 */
+    padding: 20px;
+    color: white;
+    overflow-y: auto;
+}
+
+/* Main content */
+.admin-main {
+    position: absolute;
+    top: 60px;
+    left: 250px;
+    width: calc(100vw - 250px);
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+    padding: 20px;
+    background-color: #f3f4f6;
+    /* Slate 100 */
+}
+
+/* Sidebar menu */
+.admin-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.admin-sidebar li button {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 5px;
+    background-color: #34d369;
+    /* Indigo 500 */
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.admin-sidebar li button:hover {
+    background-color: #10b981;
+    /* Indigo 600 */
+}
+
+/* Reusable admin buttons */
+button {
+    padding: 10px 16px;
+    background-color: #34d369;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #10b981;
+}
