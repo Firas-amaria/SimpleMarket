@@ -8,10 +8,31 @@ const orderSchema = new mongoose.Schema(
       {
         product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
         quantity: { type: Number, required: true },
-        price: { type: Number, required: true }, // Snapshot of price at order time
+        price: { type: Number, required: true }, // snapshot of price at order time
       },
     ],
     totalAmount: { type: Number, required: true },
+
+    // NEW: admin + tracking
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "confirmed",
+        "preparing",
+        "out_for_delivery",
+        "delivered",
+        "cancelled",
+      ],
+      default: "pending",
+      index: true,
+    },
+    adminNotes: [
+      {
+        at: { type: Date, default: Date.now },
+        note: String,
+      },
+    ],
   },
   { timestamps: true }
 );
