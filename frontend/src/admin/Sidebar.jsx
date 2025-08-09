@@ -10,13 +10,16 @@ const Sidebar = () => {
       <h3>Admin Menu</h3>
       <ul>
         <li>
-          <button onClick={() => navigate('/admin/dashboard')}>Dashboard</button>
+          <button onClick={() => navigate('/admin/Dashboard')}>Dashboard</button>
         </li>
         <li>
           <button onClick={() => navigate('/admin/products')}>Manage Products</button>
         </li>
         <li>
           <button onClick={() => navigate('/admin/orders')}>Orders</button>
+        </li>
+        <li>
+          <button onClick={() => navigate('/admin/users')}>Users</button>
         </li>
       </ul>
     </div>

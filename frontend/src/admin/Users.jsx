@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { adminListUsers } from './adminApi';
 
 export default function AdminUsers() {
+  const me = JSON.parse(localStorage.getItem('user') || 'null');
+
   const [list, setList] = useState([]);
   const [q, setQ] = useState('');
-  const [role, setRole] = useState('');
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -19,12 +20,19 @@ export default function AdminUsers() {
     try {
       const { data } = await adminListUsers({
         q: q || undefined,
-        role: role || undefined,
+        role: 'customer', // Only customers from the backend
         page,
         limit,
       });
-      setList(data.items);
-      setTotal(data.total);
+
+      // Remove the currently logged-in user if present
+      const filtered = me ? data.items.filter(u => u._id !== me._id) : data.items;
+
+      setList(filtered);
+
+      // Adjust total if "me" was present on this page
+      const removed = (data.items.length - filtered.length);
+      setTotal(Math.max(0, data.total - removed));
     } catch (e) {
       setErr('Failed to load users');
     } finally {
@@ -35,62 +43,64 @@ export default function AdminUsers() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, role, page]);
+  }, [q, page]);
 
   return (
     <div>
       <h2>Users</h2>
 
-      <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}>
-        <input placeholder="Search name…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="">All roles</option>
-          <option value="customer">customer</option>
-          <option value="admin">admin</option>
-        </select>
-      </div>
+      <div className="table-card">
+        <div className="table-toolbar">
+          <input
+            className="input"
+            placeholder="Search name…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
 
-      {loading ? (
-        <div>Loading…</div>
-      ) : err ? (
-        <div>{err}</div>
-      ) : (
-        <>
-          <table width="100%" border="1" cellPadding="6" style={{ borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Region</th>
-                <th>Role</th>
-                <th>Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((u) => (
-                <tr key={u._id}>
-                  <td>{u.name}</td>
-                  <td>{u.email}</td>
-                  <td>{u.region || '-'}</td>
-                  <td>{u.role}</td>
-                  <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+        <div className="table-wrap">
+          {loading ? (
+            <div style={{ padding: 16 }}>Loading…</div>
+          ) : err ? (
+            <div style={{ padding: 16 }}>{err}</div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Region</th>
+                  <th>Role</th>
+                  <th>Joined</th>
                 </tr>
-              ))}
-              {list.length === 0 && (
-                <tr><td colSpan="5" align="center">No users</td></tr>
-              )}
-            </tbody>
-          </table>
-
-          {pages > 1 && (
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
-              <span>Page {page} / {pages}</span>
-              <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</button>
-            </div>
+              </thead>
+              <tbody>
+                {list.map((u) => (
+                  <tr key={u._id}>
+                    <td>{u.name}</td>
+                    <td>{u.email}</td>
+                    <td>{u.region || '-'}</td>
+                    <td>{u.role}</td>
+                    <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+                {list.length === 0 && (
+                  <tr><td colSpan="5" align="center">No users</td></tr>
+                )}
+              </tbody>
+            </table>
           )}
-        </>
-      )}
+        </div>
+
+        {pages > 1 && (
+          <div className="pagination">
+            <button className="page-btn" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
+            <span>Page {page} / {pages}</span>
+            <button className="page-btn" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

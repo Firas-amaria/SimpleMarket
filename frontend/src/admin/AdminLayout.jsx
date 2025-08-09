@@ -17,7 +17,7 @@ const AdminLayout = () => {
     <div className="admin-container">
       <header className="admin-header">
         <div>Welcome {user?.name}</div>
-        <button onClick={handleLogout}>Logout</button>
+        <button  onClick={handleLogout}>Logout</button>
       </header>
 
       <aside className="admin-sidebar">

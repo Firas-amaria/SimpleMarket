@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   adminListProducts,
   adminCreateProduct,
   adminUpdateProduct,
   adminDeleteProduct
 } from './adminApi';
+import ImageInput from "./ImageInput";
 
 const emptyForm = {
   name: '',
@@ -19,6 +21,8 @@ const emptyForm = {
 };
 
 export default function AdminProducts() {
+  const navigate = useNavigate();
+
   const [list, setList] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -115,92 +119,100 @@ export default function AdminProducts() {
     <div>
       <h2>Manage Products</h2>
 
-      <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}>
-        <input placeholder="Search name…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select value={region} onChange={(e) => setRegion(e.target.value)}>
-          <option value="">All regions</option>
-          <option value="East">East</option>
-          <option value="South">South</option>
-        </select>
-        <select value={active} onChange={(e) => setActive(e.target.value)}>
-          <option value="">All</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-        <button onClick={openCreate}>+ New Product</button>
+      <div className="table-card">
+        <div className="table-toolbar">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input className="input" placeholder="Search name…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <select className="select" value={region} onChange={(e) => setRegion(e.target.value)}>
+              <option value="">All regions</option>
+              <option value="East">East</option>
+              <option value="South">South</option>
+            </select>
+            <select className="select" value={active} onChange={(e) => setActive(e.target.value)}>
+              <option value="">All</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+          <button className="btn" onClick={openCreate}>+ New Product</button>
+        </div>
+
+        <div className="table-wrap">
+          {loading ? (
+            <div style={{ padding: 16 }}>Loading…</div>
+          ) : err ? (
+            <div style={{ padding: 16 }}>{err}</div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Name</th>
+                  <th>Region</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Active</th>
+                  <th>Featured</th>
+                  <th style={{ width: 220 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((p) => (
+                  <tr key={p._id}>
+                    <td>{p.image ? <img src={p.image} alt="" width="40" style={{ borderRadius: 6 }} /> : '-'}</td>
+                    <td>{p.name}</td>
+                    <td>{p.region || '-'}</td>
+                    <td className="text-right">{p.price}</td>
+                    <td className="text-right">{p.stock}</td>
+                    <td>{p.isActive ? <span className="badge">Active</span> : <span className="badge">Inactive</span>}</td>
+                    <td>{p.featured ? <span className="badge">Featured</span> : '-'}</td>
+                    <td>
+                      <button className="btn" onClick={() => openEdit(p)}>Edit</button>{' '}
+                      <button className="btn" onClick={() => navigate(`/admin/products/${p._id}/stock`)}>Stock</button>{' '}
+                      <button className="btn secondary" onClick={() => del(p._id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+                {list.length === 0 && (
+                  <tr><td colSpan="8" align="center">No products</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {pages > 1 && (
+          <div className="pagination">
+            <button className="page-btn" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
+            <span>Page {page} / {pages}</span>
+            <button className="page-btn" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</button>
+          </div>
+        )}
       </div>
 
-      {loading ? (
-        <div>Loading…</div>
-      ) : err ? (
-        <div>{err}</div>
-      ) : (
-        <>
-          <table width="100%" border="1" cellPadding="6" style={{ borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Name</th>
-                <th>Region</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Active</th>
-                <th>Featured</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((p) => (
-                <tr key={p._id}>
-                  <td>{p.image ? <img src={p.image} alt="" width="40" /> : '-'}</td>
-                  <td>{p.name}</td>
-                  <td>{p.region || '-'}</td>
-                  <td>{p.price}</td>
-                  <td>{p.stock}</td>
-                  <td>{String(p.isActive)}</td>
-                  <td>{String(p.featured)}</td>
-                  <td>
-                    <button onClick={() => openEdit(p)}>Edit</button>{' '}
-                    <button onClick={() => del(p._id)}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-              {list.length === 0 && (
-                <tr><td colSpan="8" align="center">No products</td></tr>
-              )}
-            </tbody>
-          </table>
-
-          {pages > 1 && (
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
-              <span>Page {page} / {pages}</span>
-              <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</button>
-            </div>
-          )}
-        </>
-      )}
-
       {showForm && (
-        <div style={{ border: '1px solid #ddd', padding: 12, marginTop: 16, borderRadius: 8 }}>
+        <div style={{ border: '1px solid #ddd', padding: 12, marginTop: 16, borderRadius: 8, background: '#fff' }}>
           <h3>{editingId ? 'Edit Product' : 'New Product'}</h3>
-          <form onSubmit={save} style={{ display: 'grid', gap: 8, maxWidth: 420 }}>
-            <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <input placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-            <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            <input placeholder="Price" type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
-            <input placeholder="Stock" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
-            <select value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })}>
+          <form onSubmit={save} style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
+            <input className="input" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input className="input" placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+            <textarea className="input" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <input className="input" placeholder="Price" type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+            <input className="input" placeholder="Stock" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
+            <select className="select" value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })}>
               <option value="">Region</option>
               <option value="East">East</option>
               <option value="South">South</option>
             </select>
-            <input placeholder="Image URL (Cloudinary)" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+
+            {/* Drag & drop + file select uploader */}
+            <ImageInput value={form.image} onChange={(url) => setForm({ ...form, image: url })} />
+
             <label><input type="checkbox" checked={!!form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Active</label>
             <label><input type="checkbox" checked={!!form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} /> Featured</label>
             <div>
-              <button type="submit">{editingId ? 'Save' : 'Create'}</button>{' '}
-              <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
+              <button className="btn" type="submit">{editingId ? 'Save' : 'Create'}</button>{' '}
+              <button className="btn secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
             </div>
           </form>
         </div>

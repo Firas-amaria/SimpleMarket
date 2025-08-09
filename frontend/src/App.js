@@ -8,13 +8,14 @@ import Profile from "./pages/Profile";
 import ProtectedAdminRoute from "./ProtectedAdminRoute";
 import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/Dashboard";
-import AdminProducts from "./admin/Products";
-import AdminOrders from "./admin/Orders";
-import AdminUsers from "./admin/Users";
+import Products from "./admin/Products";
+import Orders from "./admin/Orders";
+import Users from "./admin/Users";
 
 export default function App() {
   return (
     <Routes>
+      {/* public site */}
       <Route path="/" element={<Layout />}>
         <Route index element={<Index />} />
         <Route path="login" element={<Login />} />
@@ -22,13 +23,15 @@ export default function App() {
         <Route path="profile" element={<Profile />} />
       </Route>
 
+      {/* admin area (role-guarded) */}
       <Route element={<ProtectedAdminRoute />}>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="products" element={<AdminProducts />} />
-          <Route path="orders" element={<AdminOrders />} />
-          <Route path="users" element={<AdminUsers />} />
+          <Route path="products" element={<Products />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="users" element={<Users />} />
+          {/* products/orders/users will go here */}
         </Route>
       </Route>
     </Routes>
