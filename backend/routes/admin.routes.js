@@ -11,16 +11,22 @@ import {
   listOrders,
   updateOrderStatus,
   listUsers,
+  deleteUser,
+  listStocks,
+  createStock,
+  updateStockQty,
+  deleteStock,
 } from "../controllers/admin.controller.js";
 
 const router = Router();
 
+// All admin routes require auth + admin role
 router.use(verifyToken, isAdmin);
 
 // Dashboard
-router.get("/getDashboardStats", getDashboardStats);
+router.get("/dashboardStats", getDashboardStats);
 
-// Products
+// Products (kept your original paths to avoid breaking the UI)
 router.get("/listProducts", listProducts);
 router.get("/getProduct/:id", getProduct);
 router.post("/createProduct", createProduct);
@@ -33,5 +39,12 @@ router.patch("/updateOrderStatus/:id", updateOrderStatus);
 
 // Users
 router.get("/listUsers", listUsers);
+router.delete("/deleteUser/:id", deleteUser);
+
+// Stocks
+router.get("/listStocks", listStocks);
+router.post("/createStock", createStock);
+router.patch("/updateStockQty/:id", updateStockQty);
+router.delete("/deleteStock/:id", deleteStock);
 
 export default router;
