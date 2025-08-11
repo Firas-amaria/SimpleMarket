@@ -1,6 +1,6 @@
 // ESM file
 import { Router } from "express";
-import { verifyToken, isAdmin } from "../middlewares/auth.js";
+import { authRequired, requireAdmin } from "../middlewares/auth.js";
 import {
   getDashboardStats,
   listProducts,
@@ -21,7 +21,7 @@ import {
 const router = Router();
 
 // All admin routes require auth + admin role
-router.use(verifyToken, isAdmin);
+router.use(authRequired, requireAdmin);
 
 // Dashboard
 router.get("/dashboardStats", getDashboardStats);

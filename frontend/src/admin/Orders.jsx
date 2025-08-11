@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { adminListOrders, adminUpdateOrderStatus } from './adminApi';
+import { adminListOrders, adminUpdateOrderStatus } from './scripts/adminApi';
 
 const statuses = [
   'pending',
-  'confirmed',
-  'preparing',
-  'out_for_delivery',
+  'processing',
   'delivered',
   'cancelled',
 ];
@@ -25,13 +23,13 @@ export default function AdminOrders() {
     setLoading(true);
     setErr('');
     try {
-      const { data } = await adminListOrders({
+      const res = await adminListOrders({
         status: statusFilter || undefined,
         page,
         limit,
       });
-      setList(data.items);
-      setTotal(data.total);
+      setList(res.items);
+      setTotal(res.total);
     } catch (e) {
       setErr('Failed to load orders');
     } finally {
@@ -46,8 +44,10 @@ export default function AdminOrders() {
 
   const changeStatus = async (id, status) => {
     try {
-      await adminUpdateOrderStatus(id, { status });
-      await load();
+      const updatedOrder = await adminUpdateOrderStatus(id, { status });
+      setList(prev =>
+        prev.map(o => (o._id === id ? { ...o, status: updatedOrder.status } : o))
+      );
     } catch {
       alert('Failed to update status');
     }
@@ -55,68 +55,93 @@ export default function AdminOrders() {
 
   return (
     <div>
-      <h2>Orders</h2>
+      <h2>Manage Orders</h2>
 
-      <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">All statuses</option>
-          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
+      <div className="table-card">
+        {/* Toolbar */}
+        <div className="table-toolbar">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <select
+              className="select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
 
-      {loading ? (
-        <div>Loading…</div>
-      ) : err ? (
-        <div>{err}</div>
-      ) : (
-        <>
-          <table width="100%" border="1" cellPadding="6" style={{ borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>User</th>
-                <th>Total</th>
-                <th>Status</th>
-                <th>When</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((o) => (
-                <tr key={o._id}>
-                  <td>
-                    <ul style={{ margin: 0, paddingLeft: 16 }}>
-                      {o.products?.map((p, i) => (
-                        <li key={i}>
-                          {p?.product?.name || 'Item'} × {p.quantity} @ {p.price}
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-                  <td>{o.user?.name} ({o.user?.email})</td>
-                  <td>{o.totalAmount}</td>
-                  <td>
-                    <select value={o.status} onChange={(e) => changeStatus(o._id, e.target.value)}>
-                      {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </td>
-                  <td>{new Date(o.createdAt).toLocaleString()}</td>
+        {/* Table */}
+        <div className="table-wrap">
+          {loading ? (
+            <div style={{ padding: 16 }}>Loading…</div>
+          ) : err ? (
+            <div style={{ padding: 16 }}>{err}</div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Order Items</th>
+                  <th>User</th>
+                  <th>Status</th>
+                  <th>When</th>
                 </tr>
-              ))}
-              {list.length === 0 && (
-                <tr><td colSpan="5" align="center">No orders</td></tr>
-              )}
-            </tbody>
-          </table>
-
-          {pages > 1 && (
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
-              <span>Page {page} / {pages}</span>
-              <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</button>
-            </div>
+              </thead>
+              <tbody>
+                {list.map((o) => (
+                  <tr key={o._id}>
+                    <td>
+                      <ul style={{ margin: 0, paddingLeft: 16 }}>
+                        {o.products?.map((p, i) => (
+                          <li key={i}>
+                            {p?.product?.name || 'Item'} × {p.quantity}
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                    <td>{o.user?.name} ({o.user?.email})</td>
+                    <td>
+                      <select
+                        className="select"
+                        value={o.status}
+                        onChange={(e) => changeStatus(o._id, e.target.value)}
+                      >
+                        {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+                    <td>{new Date(o.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+                {list.length === 0 && (
+                  <tr><td colSpan="4" align="center">No orders</td></tr>
+                )}
+              </tbody>
+            </table>
           )}
-        </>
-      )}
+        </div>
+
+        {/* Pagination */}
+        {pages > 1 && (
+          <div className="pagination">
+            <button
+              className="page-btn"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Prev
+            </button>
+            <span>Page {page} / {pages}</span>
+            <button
+              className="page-btn"
+              disabled={page >= pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

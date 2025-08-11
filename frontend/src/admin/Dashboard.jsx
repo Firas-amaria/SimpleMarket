@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { adminGetDashboardStats } from './adminApi';
+import { adminGetDashboardStats } from './scripts/adminApi';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
@@ -10,8 +10,10 @@ export default function Dashboard() {
     let alive = true;
     (async () => {
       try {
-        const { data } = await adminGetDashboardStats();
-        if (alive) setStats(data);
+        const res = await adminGetDashboardStats(); // already returns .data
+        if (alive && res?.cards) {
+          setStats(res.cards); // array of { key, value }
+        }
       } catch {
         if (alive) setErr('Failed to load dashboard');
       } finally {
@@ -27,12 +29,14 @@ export default function Dashboard() {
   return (
     <div>
       <h2>Admin Dashboard</h2>
-      <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
-        <Card label="Products" value={stats.products} />
-        <Card label="Orders" value={stats.orders} />
-        <Card label="Users" value={stats.users} />
-        <Card label="Pending Orders" value={stats.pendingOrders} />
-        <Card label="Delivered Orders" value={stats.deliveredOrders} />
+      <div style={{
+        display: 'grid',
+        gap: 12,
+        gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))'
+      }}>
+        {stats.map(({ key, value }) => (
+          <Card key={key} label={formatLabel(key)} value={value} />
+        ))}
       </div>
     </div>
   );
@@ -45,4 +49,15 @@ function Card({ label, value }) {
       <div style={{ fontSize: 24, fontWeight: 700 }}>{value}</div>
     </div>
   );
+}
+
+function formatLabel(key) {
+  switch (key) {
+    case 'products': return 'Products';
+    case 'orders': return 'Orders';
+    case 'users': return 'Users';
+    case 'pendingOrders': return 'Pending Orders';
+    case 'deliveredOrders': return 'Delivered Orders';
+    default: return key;
+  }
 }

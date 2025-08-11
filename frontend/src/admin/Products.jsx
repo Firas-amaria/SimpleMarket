@@ -1,34 +1,34 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   adminListProducts,
   adminCreateProduct,
   adminUpdateProduct,
   adminDeleteProduct
-} from './adminApi';
-import ImageInput from "./ImageInput";
+} from './scripts/adminApi';
+import ImageInput from "./components/ImageInput";
 
 const emptyForm = {
   name: '',
   description: '',
   category: '',
   price: '',
-  stock: '',
   image: '',
-  region: '',
-  isActive: true,
-  featured: false,
+  isActive: true
 };
 
-export default function AdminProducts() {
-  const navigate = useNavigate();
+const CATEGORY_OPTIONS = [
+  { value: 'vegetables', label: 'Vegetables' },
+  { value: 'fruits', label: 'Fruits' },
+  { value: 'herbs', label: 'Herbs' },
+  { value: 'other', label: 'Other' }
+];
 
+export default function AdminProducts() {
   const [list, setList] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [q, setQ] = useState('');
-  const [region, setRegion] = useState('');
   const [active, setActive] = useState('');
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -42,16 +42,16 @@ export default function AdminProducts() {
     setLoading(true);
     setErr('');
     try {
-      const { data } = await adminListProducts({
+      const res = await adminListProducts({
         q: q || undefined,
-        region: region || undefined,
         active: active !== '' ? active : undefined,
         page,
         limit
       });
-      setList(data.items);
-      setTotal(data.total);
+      setList(res.items);
+      setTotal(res.total);
     } catch (e) {
+      console.error(e);
       setErr('Failed to load products');
     } finally {
       setLoading(false);
@@ -60,8 +60,7 @@ export default function AdminProducts() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, q, region, active]);
+  }, [page, q, active]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -76,11 +75,8 @@ export default function AdminProducts() {
       description: p.description || '',
       category: p.category || '',
       price: p.price ?? '',
-      stock: p.stock ?? '',
       image: p.image || '',
-      region: p.region || '',
-      isActive: !!p.isActive,
-      featured: !!p.featured,
+      isActive: !!p.isActive
     });
     setShowForm(true);
   };
@@ -91,7 +87,6 @@ export default function AdminProducts() {
       const payload = {
         ...form,
         price: form.price === '' ? undefined : Number(form.price),
-        stock: form.stock === '' ? undefined : Number(form.stock),
       };
       if (editingId) {
         await adminUpdateProduct(editingId, payload);
@@ -101,6 +96,7 @@ export default function AdminProducts() {
       setShowForm(false);
       await load();
     } catch (e) {
+      console.error(e);
       alert('Failed to save product');
     }
   };
@@ -121,14 +117,18 @@ export default function AdminProducts() {
 
       <div className="table-card">
         <div className="table-toolbar">
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input className="input" placeholder="Search name…" value={q} onChange={(e) => setQ(e.target.value)} />
-            <select className="select" value={region} onChange={(e) => setRegion(e.target.value)}>
-              <option value="">All regions</option>
-              <option value="East">East</option>
-              <option value="South">South</option>
-            </select>
-            <select className="select" value={active} onChange={(e) => setActive(e.target.value)}>
+          <div style={{ display: 'flex', gap: 8  }}>
+            <input
+              className="input"
+              placeholder="Search name…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <select
+              className="select"
+              value={active}
+              onChange={(e) => setActive(e.target.value)}
+            >
               <option value="">All</option>
               <option value="true">Active</option>
               <option value="false">Inactive</option>
@@ -148,12 +148,10 @@ export default function AdminProducts() {
                 <tr>
                   <th>Image</th>
                   <th>Name</th>
-                  <th>Region</th>
-                  <th>Price</th>
-                  <th>Stock</th>
+                  <th>Category</th>
+                  <th>Price / 100 grams</th>
                   <th>Active</th>
-                  <th>Featured</th>
-                  <th style={{ width: 220 }}></th>
+                  <th style={{ width: 200 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,20 +159,17 @@ export default function AdminProducts() {
                   <tr key={p._id}>
                     <td>{p.image ? <img src={p.image} alt="" width="40" style={{ borderRadius: 6 }} /> : '-'}</td>
                     <td>{p.name}</td>
-                    <td>{p.region || '-'}</td>
+                    <td>{p.category || '-'}</td>
                     <td className="text-right">{p.price}</td>
-                    <td className="text-right">{p.stock}</td>
                     <td>{p.isActive ? <span className="badge">Active</span> : <span className="badge">Inactive</span>}</td>
-                    <td>{p.featured ? <span className="badge">Featured</span> : '-'}</td>
                     <td>
                       <button className="btn" onClick={() => openEdit(p)}>Edit</button>{' '}
-                      <button className="btn" onClick={() => navigate(`/admin/products/${p._id}/stock`)}>Stock</button>{' '}
                       <button className="btn secondary" onClick={() => del(p._id)}>Delete</button>
                     </td>
                   </tr>
                 ))}
                 {list.length === 0 && (
-                  <tr><td colSpan="8" align="center">No products</td></tr>
+                  <tr><td colSpan="6" align="center">No products</td></tr>
                 )}
               </tbody>
             </table>
@@ -194,22 +189,46 @@ export default function AdminProducts() {
         <div style={{ border: '1px solid #ddd', padding: 12, marginTop: 16, borderRadius: 8, background: '#fff' }}>
           <h3>{editingId ? 'Edit Product' : 'New Product'}</h3>
           <form onSubmit={save} style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
-            <input className="input" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <input className="input" placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-            <textarea className="input" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            <input className="input" placeholder="Price" type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
-            <input className="input" placeholder="Stock" type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
-            <select className="select" value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })}>
-              <option value="">Region</option>
-              <option value="East">East</option>
-              <option value="South">South</option>
+            <input
+              className="input"
+              placeholder="Name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+            />
+            <select
+              className="select"
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              required
+            >
+              <option value="">Select category</option>
+              {CATEGORY_OPTIONS.map(c => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
             </select>
-
-            {/* Drag & drop + file select uploader */}
+            <textarea
+              className="input"
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Price / 100 grams"
+              type="number"
+              step="0.01"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+            />
             <ImageInput value={form.image} onChange={(url) => setForm({ ...form, image: url })} />
-
-            <label><input type="checkbox" checked={!!form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Active</label>
-            <label><input type="checkbox" checked={!!form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} /> Featured</label>
+            <label>
+              <input
+                type="checkbox"
+                checked={!!form.isActive}
+                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+              /> Active
+            </label>
             <div>
               <button className="btn" type="submit">{editingId ? 'Save' : 'Create'}</button>{' '}
               <button className="btn secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>

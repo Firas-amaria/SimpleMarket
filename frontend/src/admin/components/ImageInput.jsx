@@ -1,7 +1,15 @@
 import React, { useRef, useState } from "react";
-import uploadToCloudinary from "./uploadToCloudinary";
-
-export default function ImageInput({ value, onChange }) {
+import uploadToCloudinary from "../../utils/uploadToCloudinary";
+/**
+ * A drag-and-drop + click image upload component.
+ * Works with Cloudinary uploads.
+ *
+ * @param {string} value - Current image URL.
+ * @param {function} onChange - Callback when image URL changes.
+ * @param {object} [options] - Optional props for customization.
+ * @param {string} [options.folder] - Cloudinary folder name (e.g., "products" or "avatars").
+ */
+export default function ImageInput({ value, onChange, options = {} }) {
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
@@ -10,8 +18,8 @@ export default function ImageInput({ value, onChange }) {
     if (!file) return;
     setUploading(true);
     try {
-      const url = await uploadToCloudinary(file);
-      onChange(url);
+      const { secure_url } = await uploadToCloudinary(file, options);
+      onChange(secure_url);
     } catch (e) {
       alert(e.message || "Upload failed");
     } finally {

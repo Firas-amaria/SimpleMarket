@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './admin.css'; // Optional: if you want sidebar to be fully standalone
+import '../admin.css'; // Optional: if you want sidebar to be fully standalone
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -20,6 +20,9 @@ const Sidebar = () => {
         </li>
         <li>
           <button onClick={() => navigate('/admin/users')}>Users</button>
+        </li>
+        <li>
+          <button onClick={() => navigate('/admin/stocks')}>Stocks</button>
         </li>
       </ul>
     </div>

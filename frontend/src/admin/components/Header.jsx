@@ -1,12 +1,14 @@
-// src/components/Header.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-const Header = () => {
-  const location = useLocation();
+const AdminHeader = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('user')) || null; } catch { return null; }
+    try {
+      return JSON.parse(localStorage.getItem('user')) || null;
+    } catch {
+      return null;
+    }
   });
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -14,7 +16,11 @@ const Header = () => {
   // Listen for user changes (both storage from other tabs and our custom event)
   useEffect(() => {
     const updateUserFromStorage = () => {
-      try { setUser(JSON.parse(localStorage.getItem('user')) || null); } catch { setUser(null); }
+      try {
+        setUser(JSON.parse(localStorage.getItem('user')) || null);
+      } catch {
+        setUser(null);
+      }
     };
 
     const onStorage = (e) => {
@@ -44,35 +50,30 @@ const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    window.dispatchEvent(new Event('userChanged')); // fire event so Header updates immediately
+    window.dispatchEvent(new Event('userChanged')); // fire event so AdminHeader updates immediately
     navigate('/login');
   };
 
   return (
-    <header className="header">
-      <div className="header-left">
-        {location.pathname !== '/' ? (
-          <Link to="/" className="home-button">Home</Link>
-        ) : (
-          <button type="button" onClick={() => alert('Cart feature coming soon')}>🛒 Cart</button>
-        )}
+    <header className="admin-header">
+      <div className="admin-header-left">
+        <h2>Admin Panel</h2>
       </div>
 
-      <div className="header-right">
-        {!user ? (
-          <>
-            <button type="button" onClick={() => navigate('/login')}>Login</button>
-            <button type="button" onClick={() => navigate('/register')}>Register</button>
-          </>
-        ) : (
+      <div className="admin-header-right">
+        {user && (
           <div className="user-dropdown" ref={dropdownRef}>
-            <span onClick={() => setShowDropdown(p => !p)} style={{ cursor: 'pointer' }}>
+            <span
+              onClick={() => setShowDropdown((p) => !p)}
+              style={{ cursor: 'pointer' }}
+            >
               👤 {user.name}
             </span>
             {showDropdown && (
               <div className="dropdown-menu">
-                <button type="button" onClick={() => navigate('/profile')}>Profile</button>
-                <button type="button" onClick={handleLogout}>Logout</button>
+                <button type="button" onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
             )}
           </div>
@@ -82,4 +83,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default AdminHeader;

@@ -13,11 +13,10 @@ const isProd = process.env.NODE_ENV === "production";
 function refreshCookieOptions() {
   return {
     httpOnly: true,
-    secure: isProd, // true in production (HTTPS)
-    sameSite: isProd ? "none" : "lax", // "none" if frontend is on a different domain with HTTPS
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
     path: "/",
-    // maxAge in ms; keep it shorter than or equal to your JWT_REFRESH_EXPIRES
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   };
 }
 
@@ -63,13 +62,11 @@ export async function register(req, res, next) {
   }
 }
 
-export async function login(req, res, next) {
+export async function login(req, res) {
   try {
     const { email, password } = req.body;
     if (!email || !password)
-      return res
-        .status(400)
-        .json({ message: "email and password are required" });
+      return res.status(400).json({ message: "Email & password required" });
 
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
@@ -77,21 +74,26 @@ export async function login(req, res, next) {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
+    // ✅ use the same token helpers as register
     const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user);
     setRefreshCookie(res, refreshToken);
 
-    res.json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      accessToken,
-    });
+    const sanitized = {
+      id: user._id, // keep id naming consistent with register
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      region: user.region,
+      profileImage: user.profileImage,
+    };
+
+    return res.json({ accessToken, user: sanitized }); // ✅ same shape as register
   } catch (err) {
-    next(err);
+    console.error("LOGIN_ERROR:", err);
+    return res
+      .status(500)
+      .json({ message: "Login failed", detail: String(err?.message || err) });
   }
 }
 

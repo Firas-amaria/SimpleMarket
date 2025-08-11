@@ -1,4 +1,6 @@
 // ESM file
+import mongoose from "mongoose";
+
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import User from "../models/User.js";
@@ -42,13 +44,32 @@ export async function getDashboardStats(_req, res) {
 // GET /api/admin/listProducts
 export async function listProducts(req, res) {
   try {
-    const items = await Product.find({}).sort("-createdAt").lean();
+    const { q, active, page = 1, limit = 10 } = req.query;
+
+    const filter = {};
+    if (q) {
+      filter.name = { $regex: String(q), $options: "i" };
+    }
+    if (active !== undefined && active !== "") {
+      filter.isActive = active === "true";
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [items, total] = await Promise.all([
+      Product.find(filter)
+        .sort("-createdAt")
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
+      Product.countDocuments(filter),
+    ]);
 
     res.json({
       items,
-      total: items.length,
-      page: 1,
-      pages: 1,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
     });
   } catch (e) {
     res

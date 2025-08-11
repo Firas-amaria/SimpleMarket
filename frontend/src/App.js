@@ -6,11 +6,12 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 
 import ProtectedAdminRoute from "./ProtectedAdminRoute";
-import AdminLayout from "./admin/AdminLayout";
+import AdminLayout from "./admin/components/AdminLayout";
 import Dashboard from "./admin/Dashboard";
 import Products from "./admin/Products";
 import Orders from "./admin/Orders";
 import Users from "./admin/Users";
+import Stocks from "./admin/Stocks";
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
           <Route path="users" element={<Users />} />
+          <Route path="stocks" element={<Stocks />} />
           {/* products/orders/users will go here */}
         </Route>
       </Route>

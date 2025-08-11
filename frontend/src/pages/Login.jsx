@@ -1,32 +1,31 @@
+// src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api from '../utils/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
 
   const login = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await api.post('/auth/login', { email, password });
-      const { token, user } = res.data;
+  e.preventDefault();
+  try {
+    const res = await api.post('/auth/login', { email, password });
+    const { accessToken, user } = res.data;
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('token', accessToken);
+    localStorage.setItem('user', JSON.stringify(user));
+    window.dispatchEvent(new Event('userChanged')); // <--- add this
 
-      // Check user role and redirect
-      if (user.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Login failed. Please check your credentials.');
-    }
-  };
+    if (user.role === 'admin') navigate('/admin/dashboard');
+    else navigate('/');
+  } catch (err) {
+    console.error(err);
+    alert('Login failed. Please check your credentials.');
+  }
+};
 
   return (
     <form onSubmit={login}>
@@ -35,22 +34,25 @@ const Login = () => {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
+        type="email"
+        required
       />
       <input
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
         type="password"
+        required
       />
 
       <div style={{ margin: 20 }}>
-        <button onClick={() => navigate('/register')}>
-          Don't have an account? Register
+        <button type="button" onClick={() => navigate('/register')}>
+          Don&apos;t have an account? Register
         </button>
       </div>
 
       <div style={{ margin: 20 }}>
-        <button type="submit">Login</button>
+        <button type="submit" disabled={busy}>{busy ? 'Logging in…' : 'Login'}</button>
       </div>
     </form>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { adminListUsers } from './adminApi';
+import { adminListUsers, adminDeleteUser } from './scripts/adminApi';
 
 export default function AdminUsers() {
   const me = JSON.parse(localStorage.getItem('user') || 'null');
@@ -18,25 +18,37 @@ export default function AdminUsers() {
     setLoading(true);
     setErr('');
     try {
-      const { data } = await adminListUsers({
+      const res = await adminListUsers({
         q: q || undefined,
-        role: 'customer', // Only customers from the backend
+        role: 'customer', // Only customers
         page,
         limit,
       });
 
-      // Remove the currently logged-in user if present
-      const filtered = me ? data.items.filter(u => u._id !== me._id) : data.items;
+      // Remove the currently logged-in admin if in list
+      const filtered = me ? res.items.filter(u => u._id !== me._id) : res.items;
 
       setList(filtered);
 
       // Adjust total if "me" was present on this page
-      const removed = (data.items.length - filtered.length);
-      setTotal(Math.max(0, data.total - removed));
+      const removed = (res.items.length - filtered.length);
+      setTotal(Math.max(0, res.total - removed));
     } catch (e) {
       setErr('Failed to load users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+
+    try {
+      await adminDeleteUser(id);
+      setList((prev) => prev.filter((u) => u._id !== id));
+      setTotal((prev) => Math.max(0, prev - 1));
+    } catch (e) {
+      alert('Failed to delete user');
     }
   };
 
@@ -73,6 +85,7 @@ export default function AdminUsers() {
                   <th>Region</th>
                   <th>Role</th>
                   <th>Joined</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -80,13 +93,21 @@ export default function AdminUsers() {
                   <tr key={u._id}>
                     <td>{u.name}</td>
                     <td>{u.email}</td>
-                    <td>{u.region || '-'}</td>
+                    <td>{u.region ? u.region.toLowerCase() : '-'}</td>
                     <td>{u.role}</td>
                     <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button
+                        style={{ background: 'red', color: 'white', padding: '4px 8px', borderRadius: 4 }}
+                        onClick={() => handleDelete(u._id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {list.length === 0 && (
-                  <tr><td colSpan="5" align="center">No users</td></tr>
+                  <tr><td colSpan="6" align="center">No users</td></tr>
                 )}
               </tbody>
             </table>
