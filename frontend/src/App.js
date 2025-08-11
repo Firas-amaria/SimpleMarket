@@ -9,12 +9,15 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Market from "./pages/Market";
 import Cart from "./pages/Cart";
+import CustomerOrders from "./pages/Orders";
+import CustomerOrderDetails from "./pages/OrderDetails";
 
 import ProtectedAdminRoute from "./ProtectedAdminRoute";
 import AdminLayout from "./admin/components/AdminLayout";
 import Dashboard from "./admin/Dashboard";
 import Products from "./admin/Products";
-import Orders from "./admin/Orders";
+import AdminOrders from "./admin/Orders";
+import AdminOrderDetails from "./admin/OrderDetails";
 import Users from "./admin/Users";
 import Stocks from "./admin/Stocks";
 
@@ -95,6 +98,8 @@ export default function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="market" element={<Market />} />
           <Route path="cart" element={<Cart />} />
+          <Route path="orders" element={<CustomerOrders />} />
+          <Route path="orders/:id" element={<CustomerOrderDetails />} />
         </Route>
 
         {/* admin area (role-guarded) */}
@@ -103,7 +108,8 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="products" element={<Products />} />
-            <Route path="orders" element={<Orders />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="orders/:id" element={<AdminOrderDetails />} />
             <Route path="users" element={<Users />} />
             <Route path="stocks" element={<Stocks />} />
           </Route>

@@ -187,6 +187,7 @@ h2 {
 
 /* Links */
 .sidebar__link {
+  background: #9f7bc9;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -198,13 +199,12 @@ h2 {
   /* default text color */
   border: 1px solid transparent;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-  background: transparent;
 }
 
 .sidebar__link:hover {
   background: #4f1092;
   /* light purple hover */
-  color: #2d0a4e;
+  color: #b4b4b4;
   border-color: #e5e7eb;
 }
 
@@ -663,10 +663,291 @@ h2 {
 
 .sidebar__badge {
   margin-left: auto;
-  background: #6a0dad;
+  background: #b786da;
   color: #fff;
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 12px;
   font-weight: 700;
+}
+
+/* ===== Orders page ===== */
+.orders {
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+  background: transparent;
+}
+
+.orders__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.orders__title {
+  margin: 0;
+}
+
+.orders__section {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.orders__subtitle {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.orders__emptyRow,
+.orders__empty {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #4b5563;
+}
+
+/* ===== Generic table styling (used by Orders) ===== */
+.tableWrap {
+  width: 100%;
+  overflow: auto;
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  /* slate-100 */
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table thead th {
+  background: #f8fafc;
+  /* slate-50 */
+  font-weight: 700;
+}
+
+.table tbody tr:nth-child(even) td {
+  background: #fcfcff;
+  /* subtle zebra */
+}
+
+.table tbody tr:hover td {
+  background: #f7efff;
+  /* light purple hover */
+}
+
+.ta-right {
+  text-align: right;
+}
+
+/* ===== Status badges ===== */
+.badge--status {
+  text-transform: capitalize;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid transparent;
+}
+
+/* Map each status to a color that fits your palette */
+.status--pending {
+  background: #f3f4f6;
+  /* gray-100 */
+  color: #1f2937;
+  /* gray-800 */
+}
+
+.status--confirmed {
+  background: #e0f2fe;
+  /* sky-100 */
+  color: #0c4a6e;
+  /* sky-900 */
+}
+
+.status--preparing {
+  background: #fef3c7;
+  /* amber-100 */
+  color: #92400e;
+  /* amber-800 */
+}
+
+.status--out_for_delivery {
+  background: #ede9fe;
+  /* violet-100 */
+  color: #4c1d95;
+  /* violet-900 */
+}
+
+.status--delivered {
+  background: #dcfce7;
+  /* green-100 */
+  color: #14532d;
+  /* green-900 */
+}
+
+.status--cancelled {
+  background: #fee2e2;
+  /* red-100 */
+  color: #7f1d1d;
+  /* red-900 */
+  border-color: #fecaca;
+  /* subtle border */
+}
+
+/* Small ghost button variant for table actions */
+.btn--sm {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+/* ===== Order Details page ===== */
+.orderDetails {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.orderDetails__top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.orderDetails__title {
+  margin: 0;
+  text-align: center;
+}
+
+.orderDetails__code {
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f2e6ff;
+  /* light purple */
+  color: #2d0a4e;
+  margin-left: 6px;
+}
+
+.orderDetails__section {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* Meta grid */
+.orderDetails__meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+
+@media (max-width: 640px) {
+  .orderDetails__meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metaRow {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.metaLabel {
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.metaValue {
+  font-weight: 600;
+}
+
+.metaValue--strong {
+  font-weight: 800;
+}
+
+/* Section titles */
+.orderDetails__subtitle {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Timeline */
+.orderDetails__timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px;
+  display: grid;
+  gap: 10px;
+  position: relative;
+}
+
+.timelineItem {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.timelineItem::before {
+  content: "";
+  grid-column: 1;
+  grid-row: 1 / -1;
+  justify-self: center;
+  width: 2px;
+  background: #e5e7eb;
+  transform: translateY(12px);
+  height: 100%;
+}
+
+.timelineDot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background: #6a0dad;
+  border-radius: 999px;
+  margin-top: 4px;
+}
+
+.timelineContent {
+  background: #faf5ff;
+  /* very light violet */
+  border: 1px solid #efe1ff;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.timelineStatus {
+  font-weight: 700;
+}
+
+.timelineWhen {
+  color: #4b5563;
+  font-size: 12px;
+  margin-top: 2px;
 }

@@ -2,7 +2,13 @@
 import axios from "axios";
 
 /**
- * Helpers to decode JWT and check expiry.
+ * Toggle request/response debug logs.
+ * Prefer setting REACT_APP_API_DEBUG=1 in your env; fallback to this constant.
+ */
+const API_DEBUG = 1; // ← set to 0 to silence without env
+
+/**
+ * ===== JWT helpers (expiry checks) =====
  */
 function decodeJwt(token) {
   try {
@@ -24,32 +30,61 @@ function msUntilExpiry(token) {
 function isExpiringSoon(token, thresholdSec = 60) {
   return msUntilExpiry(token) <= thresholdSec * 1000;
 }
+function shortToken(t) {
+  return t ? `${String(t).slice(0, 12)}…` : "<none>";
+}
 
 /**
- * Axios instance.
- * Note: REACT_APP_API_URL should be like http://localhost:5000/api (as you set).
+ * ===== Axios instance =====
+ * Note: REACT_APP_API_URL should be like http://localhost:5000/api
  */
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
   headers: { "Content-Type": "application/json" },
-  withCredentials: true, // send/receive the refresh cookie
+  withCredentials: true, // include refresh cookie for /auth/refresh
+  timeout: 20000,
 });
 
-// Attach Authorization if we have a token
+/**
+ * ===== Request interceptor =====
+ * Attach Authorization bearer token, log if enabled.
+ */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
+  if (!config.headers) config.headers = {};
   if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  if (API_DEBUG) {
+    console.debug(
+      "[api ->]",
+      (config.method || "GET").toUpperCase(),
+      config.url,
+      {
+        hasAuth: !!token,
+        token: shortToken(token),
+        params: config.params,
+        // For safety, don't dump large bodies; show type/keys only
+        data:
+          config.data && typeof config.data === "object"
+            ? { keys: Object.keys(config.data) }
+            : config.data ?? null,
+      }
+    );
+  }
   return config;
 });
 
 /**
- * Single-flight refresh to avoid stampedes.
+ * ===== Single-flight refresh =====
+ * Ensures only one refresh runs at a time; others await the same promise.
  */
 let refreshPromise = null;
 async function refreshAccessToken() {
   if (!refreshPromise) {
-    refreshPromise = (async () => {
+    const doRefresh = async () => {
       try {
+        if (API_DEBUG) console.debug("[auth] refreshing access token…");
+        // Use the same axios instance; response interceptor skips /auth/* refresh loop.
         const res = await api.post(
           "/auth/refresh",
           {},
@@ -61,9 +96,21 @@ async function refreshAccessToken() {
           localStorage.setItem("user", JSON.stringify(user));
           window.dispatchEvent(new Event("userChanged"));
         }
+        if (API_DEBUG) {
+          console.debug("[auth] refresh OK", {
+            token: shortToken(accessToken),
+            user: user ? { id: user.id || user._id, role: user.role } : null,
+          });
+        }
         return accessToken;
       } catch (err) {
-        // ensure local session is cleared on refresh failure
+        if (API_DEBUG) {
+          console.debug("[auth] refresh FAILED", {
+            status: err?.response?.status,
+            data: err?.response?.data,
+          });
+        }
+        // Ensure local session is cleared on refresh failure
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         localStorage.removeItem("region");
@@ -71,13 +118,15 @@ async function refreshAccessToken() {
       } finally {
         refreshPromise = null;
       }
-    })();
+    };
+    refreshPromise = doRefresh();
   }
   return refreshPromise;
 }
 
 /**
- * One-time notice guard so we don't spam multiple alerts during a burst of 401s.
+ * ===== Logout + notice =====
+ * Prevent spamming multiple popups during a burst of 401s.
  */
 let logoutNoticeShown = false;
 async function hardLogoutWithNotice(
@@ -86,9 +135,9 @@ async function hardLogoutWithNotice(
   if (logoutNoticeShown) return;
   logoutNoticeShown = true;
 
-  // Best-effort: clear server cookie
   try {
-    await api.post("/auth/logout"); // interceptor won't refresh on auth routes
+    // Best-effort: ask server to clear cookie (will be ignored if already invalid)
+    await api.post("/auth/logout");
   } catch {
     /* ignore */
   }
@@ -99,27 +148,45 @@ async function hardLogoutWithNotice(
   localStorage.removeItem("region");
   window.dispatchEvent(new Event("userChanged"));
 
-  // Tell the user, then navigate
   if (typeof window !== "undefined") {
-    // Simple built-in alert (blocking until user clicks OK)
     window.alert(message);
     window.location.href = "/login";
   }
 }
 
 /**
- * Response interceptor:
- * - On 401 for non-auth routes, try one refresh then retry original request.
- * - On refresh failure, show alert + redirect.
+ * ===== Response interceptor =====
+ * On 401 for non-auth routes: try a single refresh then retry original request.
  */
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    if (API_DEBUG) {
+      console.debug(
+        "[api <-]",
+        (res.config?.method || "GET").toUpperCase(),
+        res.config?.url,
+        { status: res.status }
+      );
+    }
+    return res;
+  },
   async (error) => {
     const status = error?.response?.status;
     const original = error?.config;
 
+    if (API_DEBUG) {
+      console.debug(
+        "[api x ]",
+        (original?.method || "GET").toUpperCase(),
+        original?.url,
+        { status, data: error?.response?.data }
+      );
+    }
+
+    // If no response or no config, bubble up
     if (!status || !original) return Promise.reject(error);
 
+    // Avoid refresh loops for auth endpoints
     const urlPath = (original.url || "").toLowerCase();
     const isAuthPath =
       urlPath.includes("/auth/login") ||
@@ -132,15 +199,18 @@ api.interceptors.response.use(
         await refreshAccessToken();
         original.__isRetryAfterRefresh = true;
 
+        // Inject the newly refreshed token for the retry
         const newToken = localStorage.getItem("token");
-        if (newToken) {
-          original.headers = original.headers || {};
-          original.headers.Authorization = `Bearer ${newToken}`;
-        }
+        if (!original.headers) original.headers = {};
+        if (newToken) original.headers.Authorization = `Bearer ${newToken}`;
 
+        if (API_DEBUG) {
+          console.debug("[api ~~] retrying after refresh:", original.url, {
+            token: shortToken(newToken),
+          });
+        }
         return api(original);
       } catch (refreshErr) {
-        // Refresh failed → alert + redirect to login
         await hardLogoutWithNotice(
           "Your session has expired. Please log in again."
         );
@@ -148,13 +218,14 @@ api.interceptors.response.use(
       }
     }
 
+    // For other errors (or second 401), just bubble up
     return Promise.reject(error);
   }
 );
 
 /**
- * Public helper to refresh when access token is about to expire.
- * Call this on user interactions (click/keydown/navigation/visibilitychange).
+ * ===== Proactive refresh helper =====
+ * Call from UI event handlers to keep the token fresh.
  */
 api.refreshIfExpiringSoon = async (thresholdSec = 60) => {
   const token = localStorage.getItem("token");
@@ -163,7 +234,7 @@ api.refreshIfExpiringSoon = async (thresholdSec = 60) => {
     try {
       await refreshAccessToken();
     } catch {
-      // Let the next protected request trigger the alert+redirect path.
+      // Let the next protected request trigger logout flow.
     }
   }
 };

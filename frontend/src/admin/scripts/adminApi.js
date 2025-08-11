@@ -74,3 +74,8 @@ export const adminDeleteStock = async (id) => {
   const res = await api.delete(`/admin/deleteStock/${id}`);
   return res.data; // { message, deletedId }
 };
+
+export const adminGetOrderById = async (id) => {
+  const res = await api.get(`/admin/getOrderById/${id}`);
+  return res.data; // populated order
+};

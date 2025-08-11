@@ -9,6 +9,7 @@ import {
   updateProduct,
   deleteProduct,
   listOrders,
+  getOrderById,
   updateOrderStatus,
   listUsers,
   deleteUser,
@@ -35,6 +36,7 @@ router.delete("/deleteProduct/:id", deleteProduct);
 
 // Orders
 router.get("/listOrders", listOrders);
+router.get("/getOrderById/:id", getOrderById);
 router.patch("/updateOrderStatus/:id", updateOrderStatus);
 
 // Users

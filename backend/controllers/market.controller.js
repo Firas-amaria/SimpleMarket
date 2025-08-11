@@ -187,12 +187,20 @@ export async function createOrder(req, res) {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     const { items, region } = req.body;
+    // console.log(
+    //   "[createOrder] user:",
+    //   req.user,
+    //   "region:",
+    //   region,
+    //   "items:",
+    //   Array.isArray(items) ? items.length : items
+    // );
 
     if (!userId) {
       await session.abortTransaction();
-      return res.status(401).json({ message: "Auth required" });
+      return res.status(401).json({ message: "Auth required", user: req.user });
     }
     if (!Array.isArray(items) || items.length === 0) {
       await session.abortTransaction();
@@ -220,9 +228,16 @@ export async function createOrder(req, res) {
     for (const it of items) {
       const pid = String(it.productId);
       const qty = Number(it.quantity);
-      if (!mongoose.isValidObjectId(pid) || !Number.isFinite(qty) || qty <= 0) {
+      if (
+        !mongoose.isValidObjectId(pid) ||
+        !Number.isFinite(qty) ||
+        qty <= 0 ||
+        qty % 50 !== 0
+      ) {
         await session.abortTransaction();
-        return res.status(400).json({ message: "Invalid product or quantity" });
+        return res.status(400).json({
+          message: "Invalid product or quantity (50g steps required)",
+        });
       }
       if (!activeSet.has(pid)) {
         await session.abortTransaction();
@@ -237,11 +252,9 @@ export async function createOrder(req, res) {
       );
       if (!updated) {
         await session.abortTransaction();
-        return res
-          .status(409)
-          .json({
-            message: `Insufficient stock for product ${pid} in ${region}`,
-          });
+        return res.status(409).json({
+          message: `Insufficient stock for product ${pid} in ${region}`,
+        });
       }
     }
 
@@ -272,7 +285,7 @@ export async function createOrder(req, res) {
 
 export async function listMyOrders(req, res) {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "Auth required" });
     const { status } = req.query;
     const { page, limit, skip } = parsePagination(req.query);
@@ -294,7 +307,7 @@ export async function listMyOrders(req, res) {
 
 export async function getMyOrderById(req, res) {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "Auth required" });
 
     const id = req.params.id;

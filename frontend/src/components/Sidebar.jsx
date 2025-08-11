@@ -29,6 +29,11 @@ export default function Sidebar() {
           <span className="sidebar__text">Cart</span>
           {!!count && <span className="sidebar__badge">{count}</span>}
         </NavLink>
+
+        <NavLink to="/orders" className={({ isActive }) => `sidebar__link ${isActive ? "is-active" : ""}`}>
+         <span className="sidebar__icon" aria-hidden>📦</span>
+         <span className="sidebar__text">My Orders</span>
+        </NavLink> 
       </nav>
     </aside>
   );

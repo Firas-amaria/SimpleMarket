@@ -14,19 +14,33 @@ import { validate } from "../middlewares/validate.js";
 
 const router = Router();
 
-// ---------- Products (public) ----------
-router.get("/products", validate("listProducts"), listProducts);
-router.get("/products/:id", validate("getProduct"), getProductById);
+// ---------- Products ----------
+router.get("/listProducts", validate("listProducts"), listProducts);
+router.get("/getProductById/:id", validate("getProductById"), getProductById);
 
-// ---------- Regions (public) ----------
-router.get("/regions", listRegions);
+// ---------- Regions ----------
+router.get("/listRegions", listRegions);
 
-// ---------- Availability (public) ----------
-router.get("/availability", validate("availability"), getAvailability);
+// ---------- Availability ----------
+router.get("/getAvailability", validate("getAvailability"), getAvailability);
 
 // ---------- Orders (customer) ----------
-router.post("/orders", authRequired, validate("createOrder"), createOrder);
-router.get("/orders", authRequired, validate("listMyOrders"), listMyOrders);
-router.get("/orders/:id", authRequired, validate("getMyOrder"), getMyOrderById);
+router.post("/createOrder", authRequired, validate("createOrder"), createOrder);
+router.get(
+  "/listMyOrders",
+  authRequired,
+  validate("listMyOrders"),
+  listMyOrders
+);
+router.get(
+  "/getMyOrderById/:id",
+  authRequired,
+  validate("getMyOrderById"),
+  getMyOrderById
+);
+
+router.get("/whoami", authRequired, (req, res) => {
+  res.json({ user: req.user });
+});
 
 export default router;

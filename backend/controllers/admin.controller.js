@@ -6,6 +6,18 @@ import Order from "../models/Order.js";
 import User from "../models/User.js";
 import Stock from "../models/Stock.js";
 
+const STATUS_CHAIN = [
+  "pending",
+  "confirmed",
+  "preparing",
+  "out_for_delivery",
+  "delivered",
+];
+function nextStatusOf(s) {
+  const i = STATUS_CHAIN.indexOf(s);
+  return i >= 0 && i < STATUS_CHAIN.length - 1 ? STATUS_CHAIN[i + 1] : null;
+}
+
 /** Utility: safe field picker */
 const pick = (obj, keys) =>
   keys.reduce(
@@ -222,7 +234,8 @@ export async function listOrders(req, res) {
         .sort("-createdAt")
         .skip(skip)
         .limit(Number(limit))
-        .populate("user", "name email role"), // optional: shows who placed the order
+        .populate("user", "name email role")
+        .populate("products.product", "name price image"),
       Order.countDocuments(filter),
     ]);
 
@@ -239,6 +252,26 @@ export async function listOrders(req, res) {
   }
 }
 
+export async function getOrderById(req, res) {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+    const order = await Order.findById(id)
+      .populate("user", "name email role")
+      .populate("products.product", "name price image category isActive")
+      .lean();
+
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    return res.json(order);
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ message: "Failed to load order", error: e.message });
+  }
+}
+
 // PATCH /api/admin/updateOrderStatus/:id  { status: "pending|processing|delivered|cancelled" }
 export async function updateOrderStatus(req, res) {
   try {
@@ -247,10 +280,23 @@ export async function updateOrderStatus(req, res) {
 
     if (!status) return res.status(400).json({ message: "status is required" });
 
-    const order = await Order.findByIdAndUpdate(id, { status }, { new: true });
+    const order = await Order.findById(id);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    res.json(order);
+    const allowedNext = nextStatusOf(order.status);
+    if (status !== allowedNext) {
+      return res.status(400).json({
+        message: `Only next status allowed: ${allowedNext || "none"}`,
+      });
+    }
+
+    order.status = status;
+    await order.save(); // triggers pre('save') to stamp statusTimestamps
+
+    const populated = await order
+      .populate("user", "name email role")
+      .populate("products.product", "name price image");
+    return res.json(populated);
   } catch (e) {
     res
       .status(500)

@@ -20,7 +20,16 @@ const orderSchema = new mongoose.Schema(
             ref: "Product",
             required: true,
           },
-          quantity: { type: Number, required: true, min: 0.01 },
+          quantity: {
+            type: Number,
+            required: true,
+            min: 50, // grams
+            validate: {
+              validator: (v) => Number.isInteger(v) && v % 50 === 0,
+              message:
+                "Quantity must be an integer number of grams in 50g steps",
+            },
+          },
         },
       ],
       validate: [
@@ -80,19 +89,23 @@ orderSchema.pre("validate", async function (next) {
       .select({ _id: 1, price: 1 })
       .lean();
 
-    const priceById = new Map(found.map((p) => [String(p._id), p.price]));
+    // p.price is *per 100 grams*
+    const pricePer100gById = new Map(
+      found.map((p) => [String(p._id), p.price])
+    );
 
     let sum = 0;
     for (const item of this.products) {
       const key = String(item.product);
-      const unitPrice = priceById.get(key);
-      if (unitPrice == null) {
+      const pricePer100g = pricePer100gById.get(key);
+      if (pricePer100g == null) {
         return next(new Error("One or more products not found or inactive"));
       }
       if (item.quantity <= 0) {
         return next(new Error("Quantity must be greater than zero"));
       }
-      sum += unitPrice * item.quantity;
+      // item.quantity is in grams; price is per 100 g
+      sum += (pricePer100g / 100) * item.quantity;
     }
 
     // Round to 2 decimals since we're using floats (global price)
