@@ -115,10 +115,6 @@ export default function CartPage() {
           </button>
         )}
       </div>
-
-      {err && <div className="market__error">{err}</div>}
-      {loading && <div className="market__loading">Loading…</div>}
-
       {!totalItems ? (
         <div className="cart__empty">
           Your cart is empty.
@@ -155,7 +151,8 @@ export default function CartPage() {
               );
             })}
           </ul>
-
+          {err && <div className="market__error">{err}</div>}
+          {loading && <div className="market__loading">Loading…</div>}
           <div className="cart__summary">
             <div><strong>Items:</strong> {totalItems}</div>
             <div><strong>Total weight:</strong> {totalG} g ({totalKG} kg)</div>
