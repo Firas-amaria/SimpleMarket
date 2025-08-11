@@ -20,7 +20,7 @@ const Login = () => {
     window.dispatchEvent(new Event('userChanged')); // <--- add this
 
     if (user.role === 'admin') navigate('/admin/dashboard');
-    else navigate('/');
+    else navigate('/market');
   } catch (err) {
     console.error(err);
     alert('Login failed. Please check your credentials.');

@@ -8,6 +8,7 @@ import connectDB from "./utils/db.js";
 // --- routes ---
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import marketRoutes from "./routes/market.routes.js";
 // import productRoutes from './routes/product.routes.js';
 // import orderRoutes from './routes/order.routes.js';
 
@@ -64,6 +65,7 @@ app.use("/api/auth", authRoutes);
 // app.use('/api/products', productRoutes);
 // app.use('/api/orders', orderRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/market", marketRoutes);
 
 // 404 for API routes (after all mounts)
 app.use("/api", (_req, res) => {

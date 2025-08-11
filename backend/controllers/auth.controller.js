@@ -10,13 +10,35 @@ import {
 const isProd = process.env.NODE_ENV === "production";
 
 // One place for your cookie options
+// --- helper: parse "45m", "2h", "7d" to milliseconds (minimal) ---
+function parseDurationToMs(str) {
+  if (!str) return undefined;
+  const m = /^(\d+)\s*([smhd])$/.exec(String(str).trim());
+  if (!m) return undefined;
+  const n = Number(m[1]);
+  const unit = m[2];
+  const mult =
+    unit === "s"
+      ? 1000
+      : unit === "m"
+      ? 60 * 1000
+      : unit === "h"
+      ? 60 * 60 * 1000
+      : /* d */ 24 * 60 * 60 * 1000;
+  return n * mult;
+}
+const REFRESH_COOKIE_MAX_AGE =
+  parseDurationToMs(process.env.JWT_REFRESH_EXPIRES) ??
+  30 * 24 * 60 * 60 * 1000;
+
+// One place for your cookie options
 function refreshCookieOptions() {
   return {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? "none" : "lax",
     path: "/",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
+    maxAge: REFRESH_COOKIE_MAX_AGE,
   };
 }
 
@@ -97,9 +119,15 @@ export async function login(req, res) {
   }
 }
 
-// Rotate refresh token and issue a new access token
+// controllers/auth.controller.js (inside export async function refresh)
 export async function refresh(req, res, next) {
   try {
+    // Basic CSRF guard: only allow JS/XHR from your site to hit refresh
+    const xrw = req.get("X-Requested-With");
+    if (!xrw || xrw.toLowerCase() !== "xmlhttprequest") {
+      return res.status(400).json({ message: "Bad refresh request" });
+    }
+
     const rt = req.cookies?.rt;
     if (!rt) return res.status(401).json({ message: "Missing refresh token" });
 
@@ -113,14 +141,9 @@ export async function refresh(req, res, next) {
     const user = await User.findById(payload.sub);
     if (!user) return res.status(401).json({ message: "User not found" });
 
-    // Token-wide invalidation check
     if (payload.tokenVersion !== user.tokenVersion) {
       return res.status(401).json({ message: "Refresh token revoked" });
     }
-
-    // Optional rotation strategy:
-    // - Keep the same tokenVersion for multi-device support
-    // - If you want "logout everywhere" or revoke-all: increment user.tokenVersion
 
     const newAccess = signAccessToken(user);
     const newRefresh = signRefreshToken(user);

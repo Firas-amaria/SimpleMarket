@@ -1,16 +1,35 @@
-import React from 'react';
-import Header from './Header';
-import { Outlet } from 'react-router-dom';
+// src/components/Layout.jsx
+import React from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import Header from "./Header";
+import Sidebar from "./Sidebar";
+import "../index.css";
 
-const Layout = () => {
+
+export default function Layout() {
+  const location = useLocation();
+  const path = location.pathname;
+
+  // Pages where we do NOT show the sidebar
+  const hideSidebar =
+    path === "/" || path.startsWith("/login") || path.startsWith("/register");
+
   return (
     <>
       <Header />
-      <main>
-        <Outlet />
-      </main>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: hideSidebar ? "1fr" : "220px 1fr",
+          gap: 0,
+          alignItems: "start",
+        }}
+      >
+        {!hideSidebar && <Sidebar />}
+        <main style={{ padding: "16px" }}>
+          <Outlet />
+        </main>
+      </div>
     </>
   );
-};
-
-export default Layout;
+}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../utils/api';
 
 const AdminHeader = () => {
   const navigate = useNavigate();
@@ -47,12 +48,24 @@ const AdminHeader = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    window.dispatchEvent(new Event('userChanged')); // fire event so AdminHeader updates immediately
-    navigate('/login');
-  };
+  const handleLogout = async () => {
+      setShowDropdown(false);
+  
+      try {
+        // Use {} not null to avoid body-parser strict error
+        await api.post('/auth/logout', {}, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+      } catch {
+      // ignore — we'll still clear local state
+      } finally {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        localStorage.removeItem('region');
+        window.dispatchEvent(new Event('userChanged'));
+        navigate('/login', { replace: true });
+      }
+    };
 
   return (
     <header className="admin-header">

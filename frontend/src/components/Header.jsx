@@ -1,78 +1,126 @@
-// src/components/Header.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import api from "../utils/api";
 
-const Header = () => {
+export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('user')) || null; } catch { return null; }
+    try { return JSON.parse(localStorage.getItem("user")) || null; } catch { return null; }
   });
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Listen for user changes (both storage from other tabs and our custom event)
+  // Sync user across tabs + custom events
   useEffect(() => {
     const updateUserFromStorage = () => {
-      try { setUser(JSON.parse(localStorage.getItem('user')) || null); } catch { setUser(null); }
+      try { setUser(JSON.parse(localStorage.getItem("user")) || null); } catch { setUser(null); }
     };
-
-    const onStorage = (e) => {
-      if (e.key === 'user') updateUserFromStorage();
-    };
-
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('userChanged', updateUserFromStorage); // custom event
-
+    const onStorage = (e) => { if (e.key === "user") updateUserFromStorage(); };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("userChanged", updateUserFromStorage);
     return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('userChanged', updateUserFromStorage);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("userChanged", updateUserFromStorage);
     };
   }, []);
 
-  // Close dropdown if click is outside
+  // Close dropdown on outside click + Escape
   useEffect(() => {
     const handleClickOutside = (evt) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(evt.target)) {
-        setShowDropdown(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(evt.target)) setShowDropdown(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const onKey = (e) => { if (e.key === "Escape") setShowDropdown(false); };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    window.dispatchEvent(new Event('userChanged')); // fire event so Header updates immediately
-    navigate('/login');
+  const handleLogout = async () => {
+    setShowDropdown(false);
+    try {
+      await api.post("/auth/logout", {}, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+    } catch {
+      // ignore API errors; clear client state regardless
+    } finally {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      localStorage.removeItem("region");
+      window.dispatchEvent(new Event("userChanged"));
+      navigate("/login", { replace: true });
+    }
   };
+
+  const showHomeLeft =
+    location.pathname === "/" ||
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/register");
 
   return (
     <header className="header">
-      <div className="header-left">
-        {location.pathname !== '/' ? (
-          <Link to="/" className="home-button">Home</Link>
-        ) : (
-          <button type="button" onClick={() => alert('Cart feature coming soon')}>🛒 Cart</button>
-        )}
+      {/* Left */}
+      <div className="header__left">
+        {showHomeLeft ? (
+          <button
+            type="button"
+            className="header__homeBtn"
+            onClick={() => navigate("/")}
+            aria-label="Go to home page"
+          >
+            Home
+          </button>
+        ) : (<button
+          type="button"
+          className="header__title"
+          onClick={() => navigate("/market")}
+          aria-label="Go to market"
+        >
+          Welcome to Simple Market
+        </button>)}
       </div>
 
-      <div className="header-right">
+      {/* Center */}
+      <div className="header__center">
+
+      </div>
+
+      {/* Right */}
+      <div className="header__right">
         {!user ? (
-          <>
-            <button type="button" onClick={() => navigate('/login')}>Login</button>
-            <button type="button" onClick={() => navigate('/register')}>Register</button>
-          </>
+          <div className="header__authBtns">
+            <button type="button" className="header__link" onClick={() => navigate("/login")}>
+              Login
+            </button>
+            <button type="button" className="header__link" onClick={() => navigate("/register")}>
+              Register
+            </button>
+          </div>
         ) : (
-          <div className="user-dropdown" ref={dropdownRef}>
-            <span onClick={() => setShowDropdown(p => !p)} style={{ cursor: 'pointer' }}>
+          <div className="userMenu" ref={dropdownRef}>
+            <button
+              type="button"
+              className="userMenu__button"
+              onClick={() => setShowDropdown((p) => !p)}
+              aria-haspopup="menu"
+              aria-expanded={showDropdown}
+            >
               👤 {user.name}
-            </span>
+            </button>
             {showDropdown && (
-              <div className="dropdown-menu">
-                <button type="button" onClick={() => navigate('/profile')}>Profile</button>
-                <button type="button" onClick={handleLogout}>Logout</button>
+              <div className="userMenu__dropdown" role="menu">
+                <button
+                  type="button"
+                  className="userMenu__item"
+                  onClick={() => { setShowDropdown(false); navigate("/profile"); }}
+                >
+                  Profile
+                </button>
+                <button type="button" className="userMenu__item" onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
             )}
           </div>
@@ -80,6 +128,4 @@ const Header = () => {
       </div>
     </header>
   );
-};
-
-export default Header;
+}
