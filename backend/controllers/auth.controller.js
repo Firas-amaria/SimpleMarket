@@ -9,6 +9,7 @@ import {
 
 const isProd = process.env.NODE_ENV === "production";
 
+const CANON_REGIONS = new Set(["east", "west"]);
 // One place for your cookie options
 // --- helper: parse "45m", "2h", "7d" to milliseconds (minimal) ---
 function parseDurationToMs(str) {
@@ -48,34 +49,48 @@ function setRefreshCookie(res, rt) {
 
 export async function register(req, res, next) {
   try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password)
+    const { name, email, password, region } = req.body;
+
+    if (!name || !email || !password || !region) {
       return res
         .status(400)
-        .json({ message: "name, email, password are required" });
+        .json({ message: "name, email, password, region are required" });
+    }
+
+    const normRegion = String(region).toLowerCase();
+    if (!CANON_REGIONS.has(normRegion)) {
+      return res
+        .status(400)
+        .json({ message: "Region must be 'east' or 'west'" });
+    }
 
     const exists = await User.findOne({ email });
-    if (exists)
+    if (exists) {
       return res.status(409).json({ message: "Email already in use" });
+    }
 
     const hash = await bcrypt.hash(password, 12);
+
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim(),
       password: hash,
       role: "customer",
+      region: normRegion, // ✅ save region
     });
 
     const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user);
     setRefreshCookie(res, refreshToken);
 
-    res.status(201).json({
+    // include region in response to keep client state consistent (even though you navigate to login)
+    return res.status(201).json({
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
+        region: user.region, // ✅ return region
       },
       accessToken,
     });
@@ -156,6 +171,7 @@ export async function refresh(req, res, next) {
         name: user.name,
         email: user.email,
         role: user.role,
+        region: user.region, // ✅ include region so frontend stays in sync
       },
     });
   } catch (err) {

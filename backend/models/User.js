@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
     profileImage: { type: String },
-    region: { type: String },
+    region: { type: String, enum: ["east", "west"], required: true }, // 👈 enforce canon regions
   },
   { timestamps: true }
 );
