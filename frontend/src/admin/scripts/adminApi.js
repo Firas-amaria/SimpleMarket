@@ -79,3 +79,18 @@ export const adminGetOrderById = async (id) => {
   const res = await api.get(`/admin/getOrderById/${id}`);
   return res.data; // populated order
 };
+
+export const adminAdvanceOrderStatus = async (id) => {
+  const res = await api.post(`/admin/advanceOrderStatus/${id}`);
+  return res.data; // { order, prevStatus, nextStatus }
+};
+
+export const adminAdvanceManyOrderStatuses = async (ids) => {
+  const res = await api.post(`/admin/advanceManyOrderStatuses`, { ids });
+  return res.data; // { ok: string[], skipped: {id, reason}[] }
+};
+
+export const adminCancelOrder = async (id, reason) => {
+  const res = await api.post(`/admin/cancelOrder/${id}`, { reason });
+  return res.data; // { order, cancelledAt, reason }
+};

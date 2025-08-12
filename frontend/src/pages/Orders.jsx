@@ -11,6 +11,8 @@ const ACTIVE_STATUSES = [
   "out_for_delivery",
 ];
 
+const REFRESH_MS = 30_000; // auto-refresh every 30s
+
 function formatMoney(n) {
   if (typeof n !== "number") return "-";
   return `$${n.toFixed(2)}`;
@@ -30,43 +32,65 @@ export default function Orders() {
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [err, setErr] = useState("");
 
+  // One function to load all pages
+  const loadAll = async ({ isBackground = false } = {}) => {
+    try {
+      if (isBackground) setRefreshing(true);
+      else setLoading(true);
+
+      setErr("");
+      const acc = [];
+      let page = 1;
+      let pages = 1;
+      const LIMIT = 20;
+
+      while (page <= pages) {
+        const res = await listMyOrders({ page, limit: LIMIT });
+        acc.push(...(res.items || []));
+        pages = res.pages || 1;
+        page += 1;
+      }
+
+      acc.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setOrders(acc);
+    } catch (e) {
+      const message =
+        e?.response?.data?.message || e.message || "Failed to load orders";
+      setErr(message);
+      // On initial load, show toast; on background refresh, avoid spam
+      if (!isBackground) toast(message);
+    } finally {
+      if (isBackground) setRefreshing(false);
+      else setLoading(false);
+    }
+  };
+
+  // Initial load
   useEffect(() => {
     let alive = true;
     (async () => {
-      setLoading(true);
-      setErr("");
-      try {
-        const acc = [];
-        let page = 1;
-        let pages = 1;
-        const LIMIT = 20;
-
-        while (page <= pages) {
-          const res = await listMyOrders({ page, limit: LIMIT });
-          acc.push(...(res.items || []));
-          pages = res.pages || 1;
-          page += 1;
-        }
-
-        if (!alive) return;
-        acc.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setOrders(acc);
-      } catch (e) {
-        if (!alive) return;
-        const message =
-          e?.response?.data?.message || e.message || "Failed to load orders";
-        setErr(message);
-        toast(message);
-      } finally {
-        if (alive) setLoading(false);
-      }
+      if (!alive) return;
+      await loadAll({ isBackground: false });
     })();
     return () => {
       alive = false;
     };
-  }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-refresh every 30s when tab is visible
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      loadAll({ isBackground: true });
+    };
+    const id = setInterval(tick, REFRESH_MS);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { activeOrders, historyOrders } = useMemo(() => {
     const active = [];
@@ -79,8 +103,7 @@ export default function Orders() {
   }, [orders]);
 
   const renderTable = (rows) => {
-    if (!rows.length)
-      return <div className="orders__empty">No orders.</div>;
+    if (!rows.length) return <div className="orders__empty">No orders.</div>;
 
     return (
       <div className="tableWrap">
@@ -125,6 +148,9 @@ export default function Orders() {
             ))}
           </tbody>
         </table>
+        {refreshing && (
+          <div className="table__refreshHint">Refreshing…</div>
+        )}
       </div>
     );
   };
@@ -135,6 +161,7 @@ export default function Orders() {
     <div className="orders">
       <div className="orders__top">
         <h2 className="orders__title">My Orders</h2>
+        <div className="orders__hint">Auto-refresh every 30s</div>
       </div>
 
       {err && <div className="market__error">{err}</div>}
@@ -143,7 +170,11 @@ export default function Orders() {
       {showNoOrdersCTA && (
         <div className="orders__emptyRow">
           <div>No orders yet.</div>
-          <button type="button" className="btn--ghost" onClick={() => navigate("/market")}>
+          <button
+            type="button"
+            className="btn--ghost"
+            onClick={() => navigate("/market")}
+          >
             Go to Market
           </button>
         </div>

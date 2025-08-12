@@ -11,6 +11,7 @@ import Market from "./pages/Market";
 import Cart from "./pages/Cart";
 import CustomerOrders from "./pages/Orders";
 import CustomerOrderDetails from "./pages/OrderDetails";
+import Checkout from "./pages/Checkout";
 
 import ProtectedAdminRoute from "./ProtectedAdminRoute";
 import AdminLayout from "./admin/components/AdminLayout";
@@ -100,6 +101,7 @@ export default function App() {
           <Route path="cart" element={<Cart />} />
           <Route path="orders" element={<CustomerOrders />} />
           <Route path="orders/:id" element={<CustomerOrderDetails />} />
+          <Route path="checkout" element={<Checkout />} />
         </Route>
 
         {/* admin area (role-guarded) */}

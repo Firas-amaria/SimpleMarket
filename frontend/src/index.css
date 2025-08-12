@@ -951,3 +951,178 @@ h2 {
   font-size: 12px;
   margin-top: 2px;
 }
+
+/* ===== Checkout page ===== */
+.checkout {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  background: transparent;
+}
+
+.checkout__top {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.checkout__title {
+  margin: 0;
+  text-align: center;
+}
+
+/* Reusable card container (also useful elsewhere) */
+.card {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* Section headings inside cards */
+.card>h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Responsive grid used by forms on Checkout */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Make labels behave like clean form rows */
+.grid>label,
+.row>label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* Inline row for small controls (checkbox + text, button rows, etc.) */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Muted helper text */
+.muted {
+  color: #4b5563;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Review list (items and totals) */
+.review-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.review-list>li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+}
+
+.summary-row {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Bottom actions (Back / Place Order) */
+.actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Solid primary button used on Checkout */
+.btn {
+  cursor: pointer;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #6a0dad;
+  /* match global button color */
+  color: #fff;
+  font-weight: 700;
+  transition: background 0.2s ease;
+}
+
+.btn:hover {
+  background: #4e0683;
+}
+
+.btn:disabled,
+.btn--ghost:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* States */
+.market__error {
+  color: #b91c1c;
+  margin-top: 12px;
+}
+
+.market__loading {
+  margin-top: 24px;
+}
+
+/* Inputs inside cards: slightly tighten spacing vs. global defaults */
+.card input,
+.card textarea {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+/* Textarea style alignment with inputs */
+.card textarea {
+  min-height: 80px;
+  resize: vertical;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+/* Checkbox alignment in "remember address" row */
+.card .row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+/* Hint for "demo payment" block */
+.card .muted {
+  background: #faf5ff;
+  border: 1px solid #efe1ff;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
