@@ -1126,3 +1126,28 @@ h2 {
   border-radius: 8px;
   padding: 8px 10px;
 }
+
+/* ===== App Shell layout (header fixed, sidebar fixed, main scrolls) ===== */
+.appShell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  /* header, then fill remainder */
+  height: 100vh;
+  /* lock to viewport height */
+}
+
+/* The grid that contains sidebar + main */
+.shellBody {
+  /* display/grid and columns are set inline from Layout.jsx to respect hideSidebar */
+  height: 100%;
+  overflow: hidden;
+  /* prevent page scrollbars */
+}
+
+/* Only the main area scrolls */
+.pageMain {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  background: transparent;
+}

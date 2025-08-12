@@ -5,7 +5,6 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import "../index.css";
 
-
 export default function Layout() {
   const location = useLocation();
   const path = location.pathname;
@@ -15,21 +14,25 @@ export default function Layout() {
     path === "/" || path.startsWith("/login") || path.startsWith("/register");
 
   return (
-    <>
+    <div className="appShell">
       <Header />
+
       <div
+        className="shellBody"
         style={{
           display: "grid",
-          gridTemplateColumns: hideSidebar ? "1fr" : "220px 1fr",
+          gridTemplateColumns: hideSidebar ? "1fr" : "240px 1fr",
           gap: 0,
-          alignItems: "start",
+          alignItems: "stretch",
+          overflow: "hidden", // important: block page scroll, main will scroll
         }}
       >
         {!hideSidebar && <Sidebar />}
-        <main style={{ padding: "16px" }}>
+
+        <main className="pageMain">
           <Outlet />
         </main>
       </div>
-    </>
+    </div>
   );
 }

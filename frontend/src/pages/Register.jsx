@@ -1,79 +1,135 @@
 // src/pages/Register.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../utils/api';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../utils/api";
 
-const CANON_REGIONS = ['east', 'west'];
+const CANON_REGIONS = ["east", "west"];
 
-const Register = () => {
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    region: (localStorage.getItem('region') || '').toLowerCase(),
-  });
-
+export default function Register() {
   const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    region: "", // ← no default from localStorage
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const onChange = (k) => (e) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) return alert("Passwords don't match");
+    setError("");
 
-    const region = (form.region || '').toLowerCase();
-    if (!CANON_REGIONS.includes(region)) return alert('Please select a valid region (east/west).');
+    // Basic validations
+    if (!form.name.trim() || !form.email.trim()) {
+      return setError("Name and email are required.");
+    }
+    if (form.password !== form.confirmPassword) {
+      return setError("Passwords do not match.");
+    }
+    const region = (form.region || "").toLowerCase().trim();
+    if (!CANON_REGIONS.includes(region)) {
+      return setError("Please select a valid region (east/west).");
+    }
 
     try {
-      await api.post('/auth/register', {
-        name: form.name,
-        email: form.email,
+      setSubmitting(true);
+
+      // IMPORTANT: backend register() only accepts name, email, password
+      await api.post("/auth/register", {
+        name: form.name.trim(),
+        email: form.email.trim(),
         password: form.password,
-        region, // normalized
+        // region is intentionally NOT sent because your controller ignores it
       });
-      localStorage.setItem('region', region); // keep storefront in sync
-      alert('Registered! Now log in.');
-      navigate('/login');
+
+      // Keep the storefront in sync client-side for now.
+      // (This does NOT prefill the register form; it just helps the rest of the app.)
+      localStorage.setItem("region", region);
+
+      alert("Registered! Now log in.");
+      navigate("/login");
     } catch (err) {
-      alert('Registration failed');
+      // Try to surface a useful message if the API sends one (e.g., 409 email in use)
+      const msg =
+        err?.response?.data?.message ||
+        "Registration failed. Please try again.";
+      setError(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={submit}>
-      <div>
-        <h2>Register</h2>
-        <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        <input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-        <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-        <input placeholder="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-        <input placeholder="Confirm Password" type="password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required />
+    <form onSubmit={submit} style={{ maxWidth: 420, margin: "0 auto" }}>
+      <h2>Register</h2>
 
-        {!form.region && (
-          <>
-            <label>Select region:</label>
-            <select
-              value={form.region}
-              onChange={(e) => setForm({ ...form, region: e.target.value.toLowerCase() })}
-            >
-              <option value="">Select</option>
-              <option value="east">East</option>
-              <option value="west">West</option>
-            </select>
-          </>
-        )}
+      <div style={{ display: "grid", gap: 12 }}>
+        <input
+          placeholder="Name"
+          value={form.name}
+          onChange={onChange("name")}
+          required
+        />
+        <input
+          placeholder="Email"
+          type="email"
+          value={form.email}
+          onChange={onChange("email")}
+          required
+        />
+        <input
+          placeholder="Password"
+          type="password"
+          value={form.password}
+          onChange={onChange("password")}
+          required
+          minLength={6}
+        />
+        <input
+          placeholder="Confirm Password"
+          type="password"
+          value={form.confirmPassword}
+          onChange={onChange("confirmPassword")}
+          required
+          minLength={6}
+        />
 
-        {form.region && <p>Selected region: {form.region}</p>}
+        <label>
+          Region
+          <select
+            value={form.region}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, region: e.target.value.toLowerCase() }))
+            }
+            required
+          >
+            <option value="">Select...</option>
+            <option value="east">East</option>
+            <option value="west">West</option>
+          </select>
+        </label>
       </div>
 
-      <div style={{ margin: 20 }}>
-        <button type="button" onClick={() => navigate('/login')}>Already have an account? Login</button>
-      </div>
-      <div style={{ margin: 20 }}>
-        <button type="submit">Register</button>
+      {error && (
+        <div style={{ color: "crimson", marginTop: 12 }} role="alert">
+          {error}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+        <button type="button" onClick={() => navigate("/login")}>
+          Already have an account? Login
+        </button>
+        <button type="submit" disabled={submitting}>
+          {submitting ? "Registering…" : "Register"}
+        </button>
       </div>
     </form>
   );
-};
-
-export default Register;
+}
