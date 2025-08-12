@@ -4,9 +4,15 @@ import { authRequired } from "../middlewares/auth.js";
 import {
   getMyDetails,
   updateMyDetails,
+  getMyProfile, // ← add
+  updateMyProfile, // ← add
 } from "../controllers/user.controller.js";
 
 const router = Router();
+
+// --- Profile (identity) ---
+router.get("/getMyProfile", authRequired, getMyProfile);
+router.put("/updateMyProfile", authRequired, updateMyProfile);
 
 // Returns/updates ONLY the saved delivery address (no payment is stored)
 router.get("/getMyDetails", authRequired, getMyDetails);
