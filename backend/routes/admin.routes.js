@@ -17,6 +17,10 @@ import {
   createStock,
   updateStockQty,
   deleteStock,
+  // NEW:
+  advanceOrderStatus,
+  advanceManyOrderStatuses,
+  cancelOrder,
 } from "../controllers/admin.controller.js";
 
 const router = Router();
@@ -38,6 +42,11 @@ router.delete("/deleteProduct/:id", deleteProduct);
 router.get("/listOrders", listOrders);
 router.get("/getOrderById/:id", getOrderById);
 router.patch("/updateOrderStatus/:id", updateOrderStatus);
+
+// NEW admin actions for status control
+router.post("/advanceOrderStatus/:id", advanceOrderStatus);
+router.post("/advanceManyOrderStatuses", advanceManyOrderStatuses);
+router.post("/cancelOrder/:id", cancelOrder);
 
 // Users
 router.get("/listUsers", listUsers);

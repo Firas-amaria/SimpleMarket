@@ -45,6 +45,25 @@ const orderSchema = new mongoose.Schema(
     // Snapshot the user's region at checkout (set this in your controller from req.user.region)
     region: { type: String, required: true, index: true },
 
+    shippingAddress: {
+      fullName: String,
+      phone: String,
+      line1: String,
+      line2: String,
+      city: String,
+      region: String,
+      postalCode: String,
+      notes: String,
+    },
+
+    paymentSnapshot: {
+      brand: String,
+      last4: String,
+      expMonth: Number,
+      expYear: Number,
+      nameOnCard: String,
+    },
+
     status: {
       type: String,
       enum: [
@@ -144,5 +163,9 @@ orderSchema.pre("save", function (next) {
 // Helpful dashboard indexes
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ region: 1, status: 1, createdAt: -1 });
+orderSchema.index({ status: 1, "statusTimestamps.pending": 1 });
+orderSchema.index({ status: 1, "statusTimestamps.confirmed": 1 });
+orderSchema.index({ status: 1, "statusTimestamps.preparing": 1 });
+orderSchema.index({ status: 1, "statusTimestamps.out_for_delivery": 1 });
 
 module.exports = mongoose.model("Order", orderSchema);

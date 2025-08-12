@@ -476,3 +476,172 @@ export async function deleteStock(req, res) {
       .json({ message: "Failed to delete stock", error: e.message });
   }
 }
+
+// --- NEW: advance one order to the next status ---
+export async function advanceOrderStatus(req, res) {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+
+    // Read current status once
+    const found = await Order.findById(id).select({ status: 1 }).lean();
+    if (!found) return res.status(404).json({ message: "Order not found" });
+
+    const current = found.status;
+    const next = nextStatusOf(current);
+    if (!next) {
+      return res.status(409).json({ message: "Order is already terminal" });
+    }
+
+    const now = new Date();
+    const set = {
+      status: next,
+      updatedAt: now,
+    };
+    set[`statusTimestamps.${next}`] = now;
+
+    // Atomic claim: only update if status is still 'current'
+    const updated = await Order.findOneAndUpdate(
+      { _id: id, status: current },
+      { $set: set },
+      { new: true } // return the updated document
+    )
+      .populate("user", "name email role")
+      .populate("products.product", "name price image");
+
+    if (!updated) {
+      return res.status(409).json({
+        message:
+          "Order status changed by another process. Refresh and try again.",
+      });
+    }
+
+    return res.json({
+      order: updated,
+      prevStatus: current,
+      nextStatus: next,
+    });
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ message: "Failed to advance order", error: e.message });
+  }
+}
+
+// --- NEW: advance many selected orders ---
+export async function advanceManyOrderStatuses(req, res) {
+  try {
+    const body = req.body || {};
+    const ids = Array.isArray(body.ids) ? body.ids : [];
+    if (!ids.length) {
+      return res.status(400).json({ message: "ids array is required" });
+    }
+    if (ids.length > 200) {
+      return res.status(400).json({ message: "Too many ids (max 200)" });
+    }
+
+    const results = { ok: [], skipped: [] };
+
+    // Process sequentially to avoid large bursts; keeps logic simple & deterministic
+    for (const rawId of ids) {
+      const id = String(rawId);
+      if (!mongoose.isValidObjectId(id)) {
+        results.skipped.push({ id, reason: "invalid_id" });
+        continue;
+      }
+
+      const found = await Order.findById(id).select({ status: 1 }).lean();
+      if (!found) {
+        results.skipped.push({ id, reason: "not_found" });
+        continue;
+      }
+
+      const current = found.status;
+      const next = nextStatusOf(current);
+      if (!next) {
+        results.skipped.push({ id, reason: "terminal" });
+        continue;
+      }
+
+      const now = new Date();
+      const set = { status: next, updatedAt: now };
+      set[`statusTimestamps.${next}`] = now;
+
+      const updated = await Order.findOneAndUpdate(
+        { _id: id, status: current },
+        { $set: set },
+        { new: true }
+      ).select({ _id: 1 });
+
+      if (updated) {
+        results.ok.push(id);
+      } else {
+        results.skipped.push({ id, reason: "race" });
+      }
+    }
+
+    return res.json(results);
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ message: "Failed to advance orders", error: e.message });
+  }
+}
+
+// --- NEW: cancel an order (optional reason) ---
+export async function cancelOrder(req, res) {
+  try {
+    const { id } = req.params;
+    const reasonRaw = (req.body && req.body.reason) || "";
+    const reason =
+      typeof reasonRaw === "string" && reasonRaw.trim()
+        ? reasonRaw.trim()
+        : "Cancelled by admin";
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+
+    // Check existence and terminality
+    const found = await Order.findById(id).select({ status: 1 }).lean();
+    if (!found) return res.status(404).json({ message: "Order not found" });
+    if (found.status === "delivered" || found.status === "cancelled") {
+      return res
+        .status(409)
+        .json({ message: "Order is terminal and cannot be cancelled" });
+    }
+
+    const now = new Date();
+    const set = {
+      status: "cancelled",
+      updatedAt: now,
+    };
+    set["statusTimestamps.cancelled"] = now;
+
+    const updated = await Order.findOneAndUpdate(
+      { _id: id, status: { $nin: ["delivered", "cancelled"] } },
+      {
+        $set: set,
+        $push: { adminNotes: { at: now, note: reason } },
+      },
+      { new: true }
+    )
+      .populate("user", "name email role")
+      .populate("products.product", "name price image");
+
+    if (!updated) {
+      // race: became terminal between check and update
+      return res
+        .status(409)
+        .json({ message: "Order is terminal and cannot be cancelled" });
+    }
+
+    return res.json({ order: updated, cancelledAt: now, reason });
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ message: "Failed to cancel order", error: e.message });
+  }
+}

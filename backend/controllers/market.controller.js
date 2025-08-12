@@ -187,20 +187,12 @@ export async function createOrder(req, res) {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const userId = req.user?.id;
-    const { items, region } = req.body;
-    // console.log(
-    //   "[createOrder] user:",
-    //   req.user,
-    //   "region:",
-    //   region,
-    //   "items:",
-    //   Array.isArray(items) ? items.length : items
-    // );
+    const userId = req.user?.id || req.user?._id;
+    const { items, shippingAddress, payment } = req.body;
 
     if (!userId) {
       await session.abortTransaction();
-      return res.status(401).json({ message: "Auth required", user: req.user });
+      return res.status(401).json({ message: "Auth required" });
     }
     if (!Array.isArray(items) || items.length === 0) {
       await session.abortTransaction();
@@ -208,12 +200,18 @@ export async function createOrder(req, res) {
         .status(400)
         .json({ message: "Order must have at least one item" });
     }
-    if (!region) {
-      await session.abortTransaction();
-      return res.status(400).json({ message: "region is required" });
-    }
 
-    // Validate products exist and are active
+    // --- Authoritative region from the user document ---
+    // If you prefer to keep region from body, remove this fetch.
+    const User = (await import("../models/User.js")).default;
+    const user = await User.findById(userId).select({ region: 1 }).lean();
+    if (!user?.region) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "User has no region set" });
+    }
+    const region = String(user.region).toLowerCase();
+
+    // --- Validate + decrement stock atomically ---
     const productIds = items.map((i) => i.productId);
     const active = await Product.find({
       _id: { $in: productIds },
@@ -224,7 +222,6 @@ export async function createOrder(req, res) {
       .lean();
     const activeSet = new Set(active.map((p) => String(p._id)));
 
-    // Decrement stock per item atomically
     for (const it of items) {
       const pid = String(it.productId);
       const qty = Number(it.quantity);
@@ -258,7 +255,41 @@ export async function createOrder(req, res) {
       }
     }
 
-    // Create order per your Order schema (no price snapshot; totalAmount computed in pre-validate)
+    // --- Sanitize snapshots (address + payment) ---
+    const shippingAddressSnapshot = shippingAddress
+      ? {
+          line1: shippingAddress.line1 ?? "",
+          line2: shippingAddress.line2 ?? "",
+          city: shippingAddress.city ?? "",
+          postalCode: shippingAddress.postalCode ?? "",
+          notes: shippingAddress.notes ?? "",
+          // DO NOT include full name / phone / region here (those live on User)
+        }
+      : undefined;
+
+    const paymentSnapshot = payment
+      ? {
+          brand: payment.brand ?? "",
+          last4: payment.last4 ? String(payment.last4).slice(-4) : "",
+          expMonth:
+            payment.expMonth !== undefined
+              ? Number(payment.expMonth)
+              : undefined,
+          expYear:
+            payment.expYear !== undefined ? Number(payment.expYear) : undefined,
+          nameOnCard: payment.nameOnCard ?? "",
+        }
+      : undefined;
+
+    // Defensive: never accept PAN/CVC even if client sends them
+    if (payment?.cardNumber || payment?.cvc) {
+      await session.abortTransaction();
+      return res
+        .status(400)
+        .json({ message: "Payment card number and CVC are not stored" });
+    }
+
+    // --- Create order (total computed in Order pre-validate) ---
     const orderDoc = {
       user: userId,
       region,
@@ -267,6 +298,10 @@ export async function createOrder(req, res) {
         product: it.productId,
         quantity: it.quantity,
       })),
+      ...(shippingAddressSnapshot
+        ? { shippingAddress: shippingAddressSnapshot }
+        : {}),
+      ...(paymentSnapshot ? { paymentSnapshot } : {}),
     };
 
     const [created] = await Order.create([orderDoc], { session });

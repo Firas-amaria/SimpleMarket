@@ -9,8 +9,7 @@ import connectDB from "./utils/db.js";
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import marketRoutes from "./routes/market.routes.js";
-// import productRoutes from './routes/product.routes.js';
-// import orderRoutes from './routes/order.routes.js';
+import userRoutes from "./routes/user.routes.js";
 
 const app = express();
 const isProd = process.env.NODE_ENV === "production";
@@ -62,10 +61,9 @@ app.get("/", (_req, res) => {
 
 // ---- API routes ----
 app.use("/api/auth", authRoutes);
-// app.use('/api/products', productRoutes);
-// app.use('/api/orders', orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/market", marketRoutes);
+app.use("/api/user", userRoutes);
 
 // 404 for API routes (after all mounts)
 app.use("/api", (_req, res) => {

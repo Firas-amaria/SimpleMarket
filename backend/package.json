@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "progress-orders:once": "node backend/jobs/orderProgressor.js --once",
+    "progress-orders:loop": "node backend/jobs/orderProgressor.js --loop"
   },
   "keywords": [],
   "author": "",
