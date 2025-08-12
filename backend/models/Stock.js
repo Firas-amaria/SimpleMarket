@@ -15,4 +15,5 @@ const stockSchema = new mongoose.Schema(
 );
 stockSchema.index({ productId: 1, region: 1 }, { unique: true });
 
-module.exports = mongoose.model("Stock", stockSchema);
+const Stock = mongoose.model("Stock", stockSchema);
+export default Stock;

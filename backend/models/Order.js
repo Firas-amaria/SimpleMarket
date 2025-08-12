@@ -168,4 +168,5 @@ orderSchema.index({ status: 1, "statusTimestamps.confirmed": 1 });
 orderSchema.index({ status: 1, "statusTimestamps.preparing": 1 });
 orderSchema.index({ status: 1, "statusTimestamps.out_for_delivery": 1 });
 
-module.exports = mongoose.model("Order", orderSchema);
+const Order = mongoose.model("Order", orderSchema);
+export default Order;
